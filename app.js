@@ -1,5 +1,5 @@
 // ==========================================================================
-// ЧАСТЬ 1: ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP API, НАВИГАЦИЯ И СОЗДАНИЕ КНОПОК
+// ЧАСТЬ 1: ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP API, НАВИГАЦИЯ И ДИНАМИЧЕСКАЯ БД
 // ==========================================================================
 
 // Пассивное и безопасное объявление API Telegram
@@ -9,6 +9,34 @@ if (window.Telegram && window.Telegram.WebApp) {
     tg.ready();
     tg.expand();
 }
+
+// --- ДИНАМИЧЕСКИЕ ДАННЫЕ ОПРОСА АДМИНИСТРАТОРОВ (ИЗ БАЗЫ БОТА) ---
+let ADMINS = [];
+
+function loadAdminsFromUrl() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const rawData = urlParams.get('data');
+        
+        if (rawData) {
+            // Распаковываем JSON, пришедший из базы данных нашего бота
+            ADMINS = JSON.parse(decodeURIComponent(rawData));
+            console.log("Администраторы успешно загружены из БД:", ADMINS);
+        }
+    } catch (e) {
+        console.error("Ошибка чтения списка админов из URL, применен резервный список:", e);
+    }
+
+    // Резервный дефолтный вариант на случай, если приложение запущено напрямую вне бота
+    if (!ADMINS || ADMINS.length === 0) {
+        ADMINS = [
+            { name: "Катя", username: "katya_support", avatar: "👩‍💻", tags: ["chill", "introvert"], desc: "Спокойная, чуткая, уважает ваши границы. Разберет любой сложный кейс без паники." }
+        ];
+    }
+}
+
+// Принудительно вызываем чтение БД при старте скрипта
+loadAdminsFromUrl();
 
 // Переключение Вкладок (Подбор / Тамагочи)
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tabQuiz.classList.remove('active');
             tamaContent.classList.add('active');
             quizContent.classList.remove('active');
-            loadOrCreateTama(); // Загружаем или создаем питомца из сейва
+            loadOrCreateTama(); // Загружаем питомца
             updateTamaUI();     // Рисуем интерфейс игры
         };
     }
@@ -42,16 +70,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Динамическое создание кнопок действий для Тамагочи
+    // Создание квадратных кнопок действий для Тамагочи
     setupTamaActionButtons();
 });
 
-// Добавление квадратных кнопок действий в интерфейс
+// Добавление кнопок действий в интерфейс игры
 function setupTamaActionButtons() {
     const actionsContainer = document.querySelector('.tama-actions');
     if (!actionsContainer) return;
 
-    // Сетка кнопок 2х2 с ровным отображением эмодзи
     actionsContainer.innerHTML = `
         <button id="feed-btn" class="game-btn">🍎 Покормить</button>
         <button id="play-btn" class="game-btn">🕺 Развлечь</button>
@@ -64,14 +91,6 @@ function setupTamaActionButtons() {
     document.getElementById('pet-btn').onclick = () => interactTama('pet');
     document.getElementById('sleep-btn').onclick = () => interactTama('sleep');
 }
-
-// --- ДАННЫЕ ОПРОСА АДМИНИСТРАТОРОВ ---
-const ADMINS = [
-    { name: "Катя", username: "katya_support", avatar: "👩‍💻", tags: ["chill", "introvert"], desc: "Спокойная, чуткая, уважает ваши границы. Разберет любой сложный кейс без паники и лишних эмоций." },
-    { name: "Алекс", username: "alex_admin", avatar: "⚡", tags: ["energy", "creative"], desc: "Динамичный, яркий и хаотичный. Отвечает со скоростью света, поднимет настроение шуткой!" },
-    { name: "Мария", username: "maria_care", avatar: "🌟", tags: ["empathy", "creative"], desc: "Искренне увлечена психологией. Выслушает, окутает теплом и решит проблему с максимальной заботой." },
-    { name: "Дмитрий", username: "dima_lead", avatar: "🧠", tags: ["rational", "chill"], desc: "Вдумчивый, глубокий и рассудительный. Поможет докопаться до сути проблемы и разложить все по полочкам." }
-];
 // ==========================================================================
 // ЧАСТЬ 2: ПОЛНЫЙ МАССИВ ИЗ 10 ПСИХОЛОГИЧЕСКИХ ВОПРОСОВ И УПРАВЛЕНИЕ ТЕСТОМ
 // ==========================================================================
@@ -132,7 +151,7 @@ const QUESTIONS = [
         ] 
     },
     { 
-        q: "7. ты сам(а) не понимаешь, что именно чувствуешь. хороший админ…", 
+        q: "7. ты сам(а) не понимаешь, что именно чувствуешь. хороший admin…", 
         o: [
             {t:"creative", text:"поможет подобрать слова"}, 
             {t:"chill", text:"скажет, что не обязательно сразу во всем разбираться"}, 
@@ -252,13 +271,14 @@ function calculateResult() {
     const actionBtn = document.getElementById('action-btn');
     if (!actionBtn) return;
     
-    if (maxMatches <= 0) {
+    if (maxMatches <= 0 || !bestAdmin) {
         document.getElementById('match-avatar').innerText = "🚀";
         document.getElementById('match-name').innerText = "Стань им сам!";
         document.getElementById('match-percent').innerText = "0%";
-        document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора. Попробуй стать им!";
+        document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора под твои уникальные критерии. Попробуй стать им!";
         actionBtn.onclick = () => openLink("https://t.me");
     } else {
+        // Динамический скоринг процентов
         const basePercent = 72 + Math.floor((maxMatches / QUESTIONS.length) * 20);
         const randomBonus = Math.floor(Math.random() * 6); 
         const finalPercent = Math.min(99, basePercent + randomBonus);
