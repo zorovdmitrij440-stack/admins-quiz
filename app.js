@@ -1,58 +1,68 @@
-// Безопасное подключение к Telegram WebApp API
-const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
-if (tg) {
-    tg.expand(); // Разворачиваем на весь экран в ТГ
+// Пассивное и безопасное объявление API
+let tg = null;
+if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
     tg.ready();
+    tg.expand();
 }
 
+// Переключение Вкладок (Подбор / Тамагочи)
+document.addEventListener('DOMContentLoaded', () => {
+    const tabQuiz = document.getElementById('tab-quiz');
+    const tabTama = document.getElementById('tab-tama');
+    const quizContent = document.getElementById('quiz-tab-content');
+    const tamaContent = document.getElementById('tama-tab-content');
+
+    if(tabQuiz && tabTama) {
+        tabQuiz.onclick = () => {
+            tabQuiz.classList.add('active');
+            tabTama.classList.remove('active');
+            quizContent.classList.add('active');
+            tamaContent.classList.remove('active');
+        };
+        tabTama.onclick = () => {
+            tabTama.classList.add('active');
+            tabQuiz.classList.remove('active');
+            tamaContent.classList.add('active');
+            quizContent.classList.remove('active');
+            loopTamaLogic(); // Запуск симуляции жизни
+        };
+    }
+
+    // Привязка старта опроса (ПРЯМАЯ, БЕЗ СЛОЖНЫХ СЛУШАТЕЛЕЙ)
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        startBtn.onclick = () => {
+            switchScreen('welcome-screen', 'quiz-screen', startQuiz);
+        };
+    }
+
+    // Кнопки Тамагочи
+    document.getElementById('feed-btn').onclick = () => interactTama('feed');
+    document.getElementById('play-btn').onclick = () => interactTama('play');
+});
+
+// --- ДАННЫЕ ОПРОСА ---
 const ADMINS = [
-    { name: "Катя", username: "katya_support", avatar: "👩‍💻", tags: ["chill", "introvert", "creative"], desc: "Спокойная, чуткая, любит котиков и рисование. Идеально разберет любой сложный кейс без паники." },
-    { name: "Алекс", username: "alex_admin", avatar: "⚡", tags: ["energy", "extrovert", "tech"], desc: "Динамичный, обожает технологии и гаджеты. Отвечает со скоростью света, заряжает позитивом!" },
-    { name: "Мария", username: "maria_care", avatar: "🌟", tags: ["empathy", "extrovert", "creative"], desc: "Искренне увлечена психологией и книгами. Выслушает, поддержит и решит проблему с максимальной заботой." },
-    { name: "Дмитрий", username: "dima_lead", avatar: "🧠", tags: ["chill", "tech", "rational"], desc: "Рациональный, рассудительный фанат системности и рок-музыки. Порядок — его второе имя." }
+    { name: "Катя", username: "katya_support", avatar: "👩‍💻", tags: ["chill", "introvert"], desc: "Спокойная, чуткая, любит котиков. Разберет любой сложный кейс без паники." },
+    { name: "Алекс", username: "alex_admin", avatar: "⚡", tags: ["energy", "extrovert"], desc: "Динамичный, обожает технологии. Отвечает со скоростью света!" },
+    { name: "Мария", username: "maria_care", avatar: "🌟", tags: ["empathy", "creative"], desc: "Увлечена психологией. Выслушает, и решит проблему с максимальной заботой." }
 ];
 
 const QUESTIONS = [
-    { q: "Как проходит твое идеальное утро?", o: [{t:"chill", text:"В тишине с чашкой кофе"}, {t:"energy", text:"С активной тренировки и бодрой музыки"}, {t:"creative", text:"За просмотром красивых артов или сериала"}] },
-    { q: "Какое качество в людях ты ценишь больше всего?", o: [{t:"empathy", text:"Умение искренне сопереживать"}, {t:"rational", text:"Холодный ум и пунктуальность"}, {t:"introvert", text:"Уважение к личным границам"}] },
-    { q: "Если в чате поддержки назревает конфликт, что должен делать админ?", o: [{t:"chill", text:"Мягко сгладить углы юмором"}, {t:"rational", text:"Четко разложить факты по полочкам"}, {t:"energy", text:"Быстро и напористо перехватить инициативу"}] },
-    { q: "Твое отношение к спонтанности?", o: [{t:"energy", text:"Обожаю! Лучшие решения — внезапные"}, {t:"chill", text:"Предпочитаю, когда все идет по плану"}, {t:"creative", text:"Спонтанность хороша, если она вдохновляет"}] },
-    { q: "Какая сфера увлечений тебе ближе всего?", o: [{t:"tech", text:"Гаджеты, игры, IT-инновации"}, {t:"creative", text:"Музыка, дизайн, кино"}, {t:"empathy", text:"Психология, саморазвитие, уют"}] },
-    { q: "Каким должен быть темп общения с поддержкой?", o: [{t:"energy", text:"Быстрым, короткими емкими фразами"}, {t:"chill", text:"Размеренным, подробным, без спешки"}, {t:"empathy", text:"Тёплым, как дружеский разговор"}] },
-    { q: "В какой атмосфере тебе комфортнее работать?", o: [{t:"introvert", text:"В уединении, где никто не отвлекает"}, {t:"extrovert", text:"В шумной команде единомышленников"}, {t:"rational", text:"В строго структурированной системе"}] },
-    { q: "Какой суперсилой должен обладать твой идеальный админ?", o: [{t:"empathy", text:"Читать мысли и угадывать настроение"}, {t:"tech", text:"Чинить любой баг силой взгляда"}, {t:"chill", text:"Сохранять абсолютное спокойствие в хаосе"}] },
-    { q: "Что выберешь посмотреть вечером?", o: [{t:"creative", text:"Артхаус или запутанный детектив"}, {t:"tech", text:"Научпоп про космос или ИИ"}, {t:"energy", text:"Экшен или крутой спортивный матч"}] },
-    { q: "Финальный штрих: возрастные предпочтения кандидата?", o: [{t:"energy", text:"Молодой, на одной волне со мной"}, {t:"rational", text:"Опытный, зрелый специалист"}, {t:"chill", text:"Возраст не важен, главное — вайб"}] }
+    { q: "Как проходит твое идеальное утро?", o: [{t:"chill", text:"В тишине с чашкой кофе"}, {t:"energy", text:"С активной тренировки"}, {t:"creative", text:"За просмотром сериала"}] },
+    { q: "Какое качество в людях важнее?", o: [{t:"empathy", text:"Умение сопереживать"}, {t:"chill", text:"Холодный рассудок"}, {t:"introvert", text:"Соблюдение границ"}] },
+    { q: "Атмосфера в чате должна быть...", o: [{t:"energy", text:"Быстрой и драйвовой"}, {t:"chill", text:"Размеренной и уютной"}, {t:"empathy", text:"Дружелюбной"}] }
 ];
 
 let currentQuestion = 0;
 let userScores = {};
 
-// Привязываем клик к стартовой кнопке (теперь безопасно)
-document.addEventListener('DOMContentLoaded', () => {
-    const startBtn = document.getElementById('start-btn');
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            switchScreen('welcome-screen', 'quiz-screen', startQuiz);
-        });
-    }
-});
-
 function switchScreen(from, to, callback) {
-    const fromEl = document.getElementById(from);
+    document.getElementById(from).classList.remove('active');
     const toEl = document.getElementById(to);
-    if (!fromEl || !toEl) return;
-
-    fromEl.style.opacity = 0;
-    setTimeout(() => {
-        fromEl.style.display = 'none';
-        toEl.style.display = 'flex';
-        setTimeout(() => {
-            toEl.style.opacity = 1;
-            if (callback) callback();
-        }, 50);
-    }, 300);
+    toEl.classList.add('active');
+    if(callback) callback();
 }
 
 function startQuiz() {
@@ -62,7 +72,6 @@ function startQuiz() {
 
 function buildDots() {
     const container = document.getElementById('dots-container');
-    if (!container) return;
     container.innerHTML = '';
     QUESTIONS.forEach((_, i) => {
         const dot = document.createElement('div');
@@ -73,15 +82,13 @@ function buildDots() {
 
 function showQuestion() {
     const qData = QUESTIONS[currentQuestion];
-    const titleEl = document.getElementById('question-title');
-    if (titleEl) titleEl.innerText = qData.q;
+    document.getElementById('question-title').innerText = qData.q;
     
     document.querySelectorAll('.dot').forEach((dot, idx) => {
         dot.className = `dot ${idx <= currentQuestion ? 'active' : ''}`;
     });
 
     const optionsContainer = document.getElementById('options-container');
-    if (!optionsContainer) return;
     optionsContainer.innerHTML = '';
 
     qData.o.forEach(opt => {
@@ -95,7 +102,6 @@ function showQuestion() {
 
 function handleAnswer(tag) {
     userScores[tag] = (userScores[tag] || 0) + 1;
-    
     if (currentQuestion < QUESTIONS.length - 1) {
         currentQuestion++;
         showQuestion();
@@ -110,57 +116,96 @@ function calculateResult() {
 
     ADMINS.forEach(admin => {
         let score = 0;
-        admin.tags.forEach(t => {
-            if (userScores[t]) score += userScores[t];
-        });
-
-        if (score > maxMatches) {
-            maxMatches = score;
-            bestAdmin = admin;
-        }
+        admin.tags.forEach(t => { if (userScores[t]) score += userScores[t]; });
+        if (score > maxMatches) { maxMatches = score; bestAdmin = admin; }
     });
 
-    const basePercent = 70 + Math.floor((maxMatches / 10) * 29);
-    const finalPercent = Math.min(99, basePercent);
+    // Начисление бонуса питомцу за успешный тест!
+    tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
 
     const actionBtn = document.getElementById('action-btn');
-
+    
     if (maxMatches <= 0) {
-        document.getElementById('result-title').innerText = "Ой, что-то пошло не так...";
         document.getElementById('match-avatar').innerText = "🚀";
-        document.getElementById('match-name').innerText = "Ты — наш уникальный кандидат!";
+        document.getElementById('match-name').innerText = "Стань им сам!";
         document.getElementById('match-percent').innerText = "0%";
-        document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора под такие редкие критерии. Попробуй стать им!";
-        
-        if (actionBtn) {
-            actionBtn.innerText = "Стать админом";
-            actionBtn.onclick = () => openLink("https://t.me");
-        }
+        document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора. Попробуй стать им!";
+        actionBtn.onclick = () => openLink("https://t.me");
     } else {
         document.getElementById('match-avatar').innerText = bestAdmin.avatar;
         document.getElementById('match-name').innerText = bestAdmin.name;
-        document.getElementById('match-percent').innerText = `${finalPercent}%`;
+        document.getElementById('match-percent').innerText = "94%";
         document.getElementById('match-desc').innerText = bestAdmin.desc;
-
-        if (actionBtn) {
-            actionBtn.innerText = `Написать ${bestAdmin.name}`;
-            actionBtn.onclick = () => openLink(`https://t.me{bestAdmin.username}`);
-        }
+        actionBtn.onclick = () => openLink(`https://t.me{bestAdmin.username}`);
     }
 }
 
 function openLink(url) {
-    if (tg) {
-        tg.openTelegramLink(url);
+    if (tg) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
+}
+
+// --- ЛОГИКА ТАМАГОЧИ ---
+let tamaStats = { satiety: 70, energy: 100, isDead: false };
+
+function loopTamaLogic() {
+    if (tamaStats.isDead) return;
+
+    // Медленный расход параметров со временем
+    tamaStats.satiety = Math.max(0, tamaStats.satiety - 2);
+    tamaStats.energy = Math.max(0, tamaStats.energy - 1);
+
+    updateTamaUI();
+}
+
+function updateTamaUI() {
+    const sprite = document.getElementById('monster-sprite');
+    const statusText = document.getElementById('monster-status-text');
+
+    document.getElementById('satiety-bar').style.width = tamaStats.satiety + '%';
+    document.getElementById('energy-bar').style.width = tamaStats.energy + '%';
+
+    if (tamaStats.satiety <= 0 || tamaStats.energy <= 0) {
+        tamaStats.isDead = true;
+        sprite.innerText = "💀";
+        statusText.innerText = "Питомец погиб... Нужен перезапуск.";
+        sprite.className = "";
+        return;
+    }
+
+    if (tamaStats.satiety < 35) {
+        sprite.innerText = "🥺";
+        statusText.innerText = "Я очень хочу кушать!";
+    } else if (tamaStats.energy < 35) {
+        sprite.innerText = "😴";
+        statusText.innerText = "Устал, хочу спать...";
     } else {
-        window.open(url, '_blank'); // Резервный вариант для обычного браузера
+        sprite.innerText = "🤖";
+        statusText.innerText = "Чувствую себя отлично!";
     }
 }
 
-const closeBtn = document.getElementById('close-btn');
-if (closeBtn) {
-    closeBtn.onclick = () => {
-        if (tg) tg.close();
-        else alert("Приложение закрылось бы в Telegram");
-    };
+function interactTama(type) {
+    if (tamaStats.isDead) return;
+
+    const sprite = document.getElementById('monster-sprite');
+    
+    if (type === 'feed') {
+        tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
+        sprite.innerText = "😋";
+    } else if (type === 'play') {
+        tamaStats.energy = Math.max(20, tamaStats.energy - 15);
+        tamaStats.satiety = Math.max(10, tamaStats.satiety - 10);
+        sprite.innerText = "🕺";
+    }
+
+    // Анимация прыжка при клике
+    sprite.style.transform = "scale(1.3) translateY(-20px)";
+    setTimeout(() => {
+        sprite.style.transform = "none";
+        updateTamaUI();
+    }, 300);
 }
+
+// Запускаем таймер жизни раз в 7 секунд
+setInterval(loopTamaLogic, 7000);
