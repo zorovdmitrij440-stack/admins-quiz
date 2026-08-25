@@ -1,13 +1,16 @@
 /* ==========================================================================
-   ОБЩИЕ СТИЛИ И ИНИЦИАЛИЗАЦИЯ (ПОДСТРОЙКА ПОД ТЕМУ TELEGRAM)
+   ОБЩИЕ СТИЛИ И НАСТРОЙКА ТЁПЛОГО ПЕСОЧНОГО ФОНА
    ========================================================================== */
 :root {
-    --bg-color: var(--tg-theme-bg-color, #ffffff);
-    --text-color: var(--tg-theme-text-color, #222222);
-    --hint-color: var(--tg-theme-hint-color, #8e8e93);
-    --button-color: var(--tg-theme-button-color, #3390ec);
-    --button-text: var(--tg-theme-button-text-color, #ffffff);
-    --secondary-bg: var(--tg-theme-secondary-bg-color, #f4f6fa);
+    --text-color: #3e2723; /* Глубокий кофейный цвет для идеальной читаемости */
+    --hint-color: rgba(62, 39, 35, 0.65); /* Тусклый текст для описаний */
+    --button-color: #a1887f; /* Благородный кофейно-пастельный цвет кнопок */
+    --button-text: #ffffff;
+    
+    /* Эффект матового стекла, адаптированный под светлый фон */
+    --glass-bg: rgba(255, 255, 255, 0.45); 
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-blur: blur(20px) cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 
 * {
@@ -19,24 +22,33 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-color);
     color: var(--text-color);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     width: 100vw;
     overflow-x: hidden;
+    
+    /* Привязка к вашей картинке фона */
+    background-image: url('imges/fon.JPEG');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 /* ==========================================================================
-   НАВИГАЦИЯ (ВКЛАДКИ СВЕРХУ)
+   НАВИГАЦИЯ (ПОЛУПРОЗРАЧНЫЕ ВКЛАДКИ СВЕРХУ)
    ========================================================================== */
 .tab-bar {
     display: flex;
-    background: var(--secondary-bg);
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
     padding: 4px;
-    border-radius: 12px;
-    margin: 12px 16px 4px 16px;
+    border-radius: 14px;
+    margin: 16px 16px 4px 16px;
     z-index: 100;
 }
 
@@ -50,17 +62,17 @@ body {
     color: var(--hint-color);
     cursor: pointer;
     border-radius: 10px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 .tab-btn.active {
-    background: var(--bg-color);
-    color: var(--button-color);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--text-color);
+    box-shadow: 0 4px 12px rgba(62, 39, 35, 0.08);
 }
 
 /* ==========================================================================
-   ОСНОВНОЙ КОНТЕНЕР И ЭКРАНЫ
+   ОСНОВНОЙ КОНТЕНТ И СТАРТОВЫЕ КАРТОЧКИ (МАТОВОЕ СТЕКЛО)
    ========================================================================== */
 #app {
     flex: 1;
@@ -93,18 +105,24 @@ body {
     opacity: 1; 
 }
 
+/* Стеклянные карточки */
 .card {
-    background: var(--bg-color);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
     width: 100%;
     display: flex;
     flex-direction: column;
     text-align: center;
+    border-radius: 24px;
+    padding: 24px 16px;
+    box-shadow: 0 8px 32px 0 rgba(62, 39, 35, 0.06);
 }
 
-/* Элементы стартового экрана и результатов */
 .emoji-hero { 
     font-size: 72px; 
-    margin: 20px 0; 
+    margin: 16px 0; 
 }
 
 h1 { 
@@ -120,8 +138,9 @@ p {
     margin-bottom: 24px; 
 }
 
+/* Главная кнопка */
 .main-button {
-    background: var(--button-color);
+    background: #5d4037; /* Контрастный шоколадный цвет для главной кнопки */
     color: var(--button-text);
     border: none;
     border-radius: 16px;
@@ -130,7 +149,11 @@ p {
     font-weight: 600;
     width: 100%;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(51, 144, 236, 0.2);
+    box-shadow: 0 4px 15px rgba(93, 64, 55, 0.2);
+    transition: transform 0.1s ease;
+}
+.main-button:active {
+    transform: scale(0.98);
 }
 
 /* ==========================================================================
@@ -150,37 +173,42 @@ p {
     flex: 1; 
     height: 4px; 
     border-radius: 2px; 
-    background: var(--hint-color); 
-    opacity: 0.2; 
+    background: rgba(62, 39, 35, 0.15); 
 }
 
 .dot.active { 
-    opacity: 1; 
-    background: var(--button-color); 
+    background: #5d4037; 
 }
 
 .options-grid { 
     display: flex; 
     flex-direction: column; 
-    gap: 10px; 
+    gap: 12px; 
     width: 100%; 
 }
 
+/* Полупрозрачные кнопки вариантов ответов */
 .option-btn {
-    background: var(--secondary-bg);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     color: var(--text-color);
-    border: none;
     padding: 16px;
     border-radius: 14px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     text-align: left;
     cursor: pointer;
     width: 100%;
+    transition: background 0.2s;
+}
+
+.option-btn:active {
+    background: rgba(255, 255, 255, 0.7);
 }
 
 .match-profile { 
-    background: var(--secondary-bg); 
+    background: rgba(255, 255, 255, 0.3); 
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 16px; 
     padding: 20px; 
     margin: 16px 0; 
@@ -194,8 +222,8 @@ p {
 
 .match-badge { 
     display: inline-block; 
-    background: rgba(51, 144, 236, 0.1); 
-    color: var(--button-color); 
+    background: #d7ccc8; 
+    color: #5d4037; 
     padding: 4px 12px; 
     border-radius: 12px; 
     font-size: 13px; 
@@ -204,7 +232,7 @@ p {
 }
 
 /* ==========================================================================
-   ИГРОВАЯ ЗОНА ТАМАГОЧИ И СЕТКА КНОПОК 2х2
+   ИГРОВАЯ ЗОНА ТАМАГОЧИ И ИСПРАВЛЕННАЯ СЕТКА КНОПОК
    ========================================================================== */
 .monster-stage {
     position: relative;
@@ -213,10 +241,9 @@ p {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin: 20px 0;
+    margin: 16px 0;
 }
 
-/* Класс текстового спрайта для эмодзи */
 .tama-emoji-sprite {
     font-size: 84px;
     line-height: 1;
@@ -228,7 +255,7 @@ p {
 #monster-shadow { 
     width: 60px; 
     height: 8px; 
-    background: rgba(0,0,0,0.06); 
+    background: rgba(62, 39, 35, 0.12); /* Тень в цвет окружения */
     border-radius: 50%; 
     margin-top: 5px; 
     animation: shadowPulse 1.5s infinite ease-in-out; 
@@ -238,13 +265,14 @@ p {
     animation: bounce 1.5s infinite ease-in-out; 
 }
 
-/* Контейнер шкал параметров */
+/* Подложка параметров */
 .stats-holder { 
     width: 100%; 
-    background: var(--secondary-bg); 
+    background: rgba(255, 255, 255, 0.3); 
+    border: 1px solid rgba(255, 255, 255, 0.4);
     padding: 16px; 
-    border-radius: 16px; 
-    margin-bottom: 10px; 
+    border-radius: 18px; 
+    margin-bottom: 12px; 
 }
 
 .stat-line { 
@@ -253,7 +281,7 @@ p {
     justify-content: space-between; 
     margin-bottom: 10px; 
     font-size: 14px; 
-    font-weight: 500; 
+    font-weight: 600; 
 }
 
 .stat-line:last-child { 
@@ -263,55 +291,53 @@ p {
 .bar-bg { 
     width: 120px; 
     height: 10px; 
-    background: rgba(0,0,0,0.08); 
+    background: rgba(62, 39, 35, 0.1); 
     border-radius: 5px; 
     overflow: hidden; 
 }
 
 .bar-fill { 
     height: 100%; 
-    background: #4CAF50; 
+    background: #81c784; /* Приглушенный зеленый */
     width: 0; 
     transition: width 0.3s ease; 
 }
 
 .bar-fill.energy { 
-    background: #FFC107; 
+    background: #ffb74d; /* Приглушенный оранжевый */
 }
 
-/* ИСПРАВЛЕННАЯ СЕТКА КНОПОК 2х2 */
+/* Квадратные матовые кнопки действий */
 .tama-actions { 
     display: grid; 
-    grid-template-columns: repeat(2, 1fr); /* Ровно 2 колонки */
-    gap: 12px; /* Равномерный отступ между кнопками */
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px; 
     width: 100%; 
-    margin-top: 10px;
 }
 
 .game-btn { 
-    background: var(--secondary-bg); 
+    background: rgba(255, 255, 255, 0.4); 
+    border: 1px solid rgba(255, 255, 255, 0.5);
     color: var(--text-color); 
-    border: 2px solid transparent; 
     padding: 14px 10px; 
-    border-radius: 16px; 
+    border-radius: 18px; 
     font-size: 14px; 
-    font-weight: 600; 
+    font-weight: 700; 
     cursor: pointer; 
     display: flex;
-    flex-direction: column; /* Эмодзи строится над текстом */
+    flex-direction: column; 
     align-items: center;
     justify-content: center;
-    gap: 6px; 
-    aspect-ratio: 1 / 1; /* Жесткий квадрат, кнопки больше не поплывут */
+    gap: 8px; 
+    aspect-ratio: 1 / 1; 
     transition: background 0.1s, border-color 0.1s;
 }
 
 .game-btn:active { 
-    border-color: var(--button-color); 
-    background: rgba(0, 0, 0, 0.03);
+    border-color: #5d4037; 
+    background: rgba(255, 255, 255, 0.7);
 }
 
-/* Резервный класс для будущих картинок PNG */
 .tama-img {
     width: 120px;
     height: 120px;
