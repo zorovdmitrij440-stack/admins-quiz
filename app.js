@@ -1,4 +1,8 @@
-// Пассивное и безопасное объявление API
+// ==========================================
+// ЧАСТЬ 1: ИНИЦИАЛИЗАЦИЯ И ЛОГИКА ОПРОСА
+// ==========================================
+
+// Пассивное и безопасное объявление API Telegram
 let tg = null;
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
@@ -25,11 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tabQuiz.classList.remove('active');
             tamaContent.classList.add('active');
             quizContent.classList.remove('active');
-            loopTamaLogic(); // Запуск симуляции жизни
+            loadOrCreateTama(); // Загружаем или создаем питомца
+            updateTamaUI();
         };
     }
 
-    // Привязка старта опроса (ПРЯМАЯ, БЕЗ СЛОЖНЫХ СЛУШАТЕЛЕЙ)
+    // Привязка старта опроса
     const startBtn = document.getElementById('start-btn');
     if (startBtn) {
         startBtn.onclick = () => {
@@ -37,16 +42,33 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Кнопки Тамагочи
-    document.getElementById('feed-btn').onclick = () => interactTama('feed');
-    document.getElementById('play-btn').onclick = () => interactTama('play');
+    // Динамическое создание кнопок действий для Тамагочи
+    setupTamaActionButtons();
 });
 
-// --- ДАННЫЕ ОПРОСА ---
+// Добавление кнопок действий в интерфейс
+function setupTamaActionButtons() {
+    const actionsContainer = document.querySelector('.tama-actions');
+    if (!actionsContainer) return;
+
+    actionsContainer.innerHTML = `
+        <button id="feed-btn" class="game-btn">🍎 Покормить</button>
+        <button id="play-btn" class="game-btn">🕺 Развлечь</button>
+        <button id="pet-btn" class="game-btn">❤️ Погладить</button>
+        <button id="sleep-btn" class="game-btn">😴 Спать</button>
+    `;
+
+    document.getElementById('feed-btn').onclick = () => interactTama('feed');
+    document.getElementById('play-btn').onclick = () => interactTama('play');
+    document.getElementById('pet-btn').onclick = () => interactTama('pet');
+    document.getElementById('sleep-btn').onclick = () => interactTama('sleep');
+}
+
+// --- ДАННЫЕ ОПРОСА АДМИНИСТРАТОРОВ ---
 const ADMINS = [
     { name: "Катя", username: "katya_support", avatar: "👩‍💻", tags: ["chill", "introvert"], desc: "Спокойная, чуткая, любит котиков. Разберет любой сложный кейс без паники." },
     { name: "Алекс", username: "alex_admin", avatar: "⚡", tags: ["energy", "extrovert"], desc: "Динамичный, обожает технологии. Отвечает со скоростью света!" },
-    { name: "Мария", username: "maria_care", avatar: "🌟", tags: ["empathy", "creative"], desc: "Увлечена психологией. Выслушает, и решит проблему с максимальной заботой." }
+    { name: "Мария", username: "maria_care", avatar: "🌟", tags: ["empathy", "creative"], desc: "Увлечена психологией. Выслушает и решит проблему с максимальной заботой." }
 ];
 
 const QUESTIONS = [
@@ -120,8 +142,12 @@ function calculateResult() {
         if (score > maxMatches) { maxMatches = score; bestAdmin = admin; }
     });
 
-    // Начисление бонуса питомцу за успешный тест!
-    tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
+    // Начисление бонуса питомцу за успешный тест
+    loadOrCreateTama();
+    if (!tamaStats.isDead) {
+        tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
+        saveTama();
+    }
 
     const actionBtn = document.getElementById('action-btn');
     
@@ -130,126 +156,201 @@ function calculateResult() {
         document.getElementById('match-name').innerText = "Стань им сам!";
         document.getElementById('match-percent').innerText = "0%";
         document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора. Попробуй стать им!";
-        actionBtn.onclick = () => openLink("https://t.me/formkeepmyheart_bot");
+        actionBtn.onclick = () => openLink("https://t.me");
     } else {
         document.getElementById('match-avatar').innerText = bestAdmin.avatar;
         document.getElementById('match-name').innerText = bestAdmin.name;
         document.getElementById('match-percent').innerText = "94%";
         document.getElementById('match-desc').innerText = bestAdmin.desc;
-        actionBtn.onclick = () => openLink(`https://t.me/keepmyheart_bot`);
+        actionBtn.onclick = () => openLink(`https://t.me{bestAdmin.username}`);
     }
 }
 
 function openLink(url) {
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openTelegramLink(url);
-    } else {
-        // Если тестируете в обычном браузере на ПК
-        window.open(url, '_blank'); 
-    }
+    if (tg) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
 }
+// ==========================================
+// ЧАСТЬ 2: ГРАФИЧЕСКИЙ ДВИЖОК ТАМАГОЧИ И ЛОКАЛЬНЫЕ СЕЙВЫ
+// ==========================================
 
-// --- ЛОГИКА ТАМАГОЧИ С РАНДОМНЫМИ ВАРИАНТАМИ ---
-// Доступные варианты питомцев (Спрайты для разных состояний)
 const TAMA_TYPES = [
     {
         name: "Робо-Помощник",
-        happy: "🤖",
-        hungry: "🥺",
-        tired: "😴",
-        dead: "💀"
+        happy: "images/robo_happy.png",
+        hungry: "images/robo_hungry.png",
+        tired: "images/robo_tired.png",
+        dead: "images/robo_dead.png"
     },
     {
         name: "Космический Котик",
-        happy: "🐱",
-        hungry: "😾",
-        tired: "🙀",
-        dead: "☠️"
+        happy: "images/cat_happy.png",
+        hungry: "images/cat_hungry.png",
+        tired: "images/cat_tired.png",
+        dead: "images/cat_dead.png"
     }
 ];
 
-// Переменная для хранения текущих характеристик
+// Дефолтные настройки
 let tamaStats = { 
-    satiety: 70, 
+    satiety: 80, 
     energy: 100, 
-    isDead: false,
-    petType: null // Сюда запишется выбранный случайный питомец
+    isDead: false, 
+    typeIndex: null, 
+    deathTime: null 
 };
 
-// Функция инициализации питомца (вызывается один раз)
-function initTama() {
-    if (!tamaStats.petType) {
-        // Рандомный выбор индекса 0 или 1
-        const randomIndex = Math.floor(Math.random() * TAMA_TYPES.length);
-        tamaStats.petType = TAMA_TYPES[randomIndex];
-        console.log("Выбран питомец: " + tamaStats.petType.name);
+// Загрузка или создание питомца
+function loadOrCreateTama() {
+    const saved = localStorage.getItem('tg_tama_save');
+    if (saved) {
+        tamaStats = JSON.parse(saved);
+        // Проверяем, не прошло ли уже время блокировки умершего питомца
+        checkDeathTimeout();
+    } else {
+        // Создаем нового случайного питомца раз и навсегда
+        tamaStats.typeIndex = Math.floor(Math.random() * TAMA_TYPES.length);
+        tamaStats.satiety = 80;
+        tamaStats.energy = 100;
+        tamaStats.isDead = false;
+        tamaStats.deathTime = null;
+        saveTama();
     }
 }
 
+function saveTama() {
+    localStorage.setItem('tg_tama_save', JSON.stringify(tamaStats));
+}
+
+// Функция проверки 24 часов после смерти
+function checkDeathTimeout() {
+    if (!tamaStats.isDead || !tamaStats.deathTime) return;
+
+    const now = Date.now();
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+    const timePassed = now - tamaStats.deathTime;
+
+    if (timePassed >= oneDayInMs) {
+        // Время прошло — разблокируем и сбрасываем состояние для нового питомца
+        tamaStats.isDead = false;
+        tamaStats.deathTime = null;
+        tamaStats.typeIndex = Math.floor(Math.random() * TAMA_TYPES.length);
+        tamaStats.satiety = 80;
+        tamaStats.energy = 100;
+        saveTama();
+    }
+}
+
+// Жизненный цикл питомца (Снижено потребление: раз в 20 секунд)
 function loopTamaLogic() {
-    initTama(); // Проверяем, создан ли питомец
+    loadOrCreateTama();
     if (tamaStats.isDead) return;
 
-    // Медленный расход параметров со временем
+    // Статистика падает намного медленнее
     tamaStats.satiety = Math.max(0, tamaStats.satiety - 2);
     tamaStats.energy = Math.max(0, tamaStats.energy - 1);
 
+    // Если один из параметров упал до 0 — питомец погибает
+    if (tamaStats.satiety <= 0 || tamaStats.energy <= 0) {
+        tamaStats.isDead = true;
+        tamaStats.deathTime = Date.now();
+    }
+
+    saveTama();
     updateTamaUI();
 }
 
+// Обновление внешнего вида игры
 function updateTamaUI() {
-    initTama();
+    loadOrCreateTama();
     const sprite = document.getElementById('monster-sprite');
     const statusText = document.getElementById('monster-status-text');
-    const pet = tamaStats.petType;
+    const actionsContainer = document.querySelector('.tama-actions');
+    
+    const pet = TAMA_TYPES[tamaStats.typeIndex];
 
     document.getElementById('satiety-bar').style.width = tamaStats.satiety + '%';
     document.getElementById('energy-bar').style.width = tamaStats.energy + '%';
 
-    // Проверка на смерть
-    if (tamaStats.satiety <= 0 || tamaStats.energy <= 0) {
-        tamaStats.isDead = true;
-        sprite.innerText = pet.dead;
-        statusText.innerText = `Твой ${pet.name} погиб... Нужен перезапуск.`;
-        sprite.className = "";
+    // ЕСЛИ ПИТОМЕЦ УМЕР
+    if (tamaStats.isDead) {
+        sprite.innerHTML = `<img src="${pet.dead}" alt="dead" class="tama-img">`;
+        
+        // Считаем сколько осталось до воскрешения
+        const now = Date.now();
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        const timeLeft = oneDayInMs - (now - tamaStats.deathTime);
+        
+        if (timeLeft > 0) {
+            const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+            statusText.innerHTML = `Ваш питомец погиб.<br><span style="color:var(--hint-color); font-size:14px;">Получить нового вы сможете через ${hoursLeft} ч.</span>`;
+            
+            // Заменяем кнопки действий на заглушку
+            if (actionsContainer) {
+                actionsContainer.innerHTML = `<button class="game-btn" style="background:#ffebee; color:#c62828; border:none; width:100%; cursor:not-allowed;" disabled>🔒 Доступ заблокирован</button>`;
+            }
+        } else {
+            // Если сутки прошли — выводим кнопку Воскресить
+            statusText.innerText = "Время прошло. Вы можете призвать нового питомца!";
+            if (actionsContainer) {
+                actionsContainer.innerHTML = `<button id="revive-btn" class="main-button" style="width:100%;">✨ Воскресить питомца</button>`;
+                document.getElementById('revive-btn').onclick = () => {
+                    localStorage.removeItem('tg_tama_save'); // Удаляем старое сохранение
+                    loadOrCreateTama(); // Пересоздаем
+                    setupTamaActionButtons(); // Возвращаем игровые кнопки
+                    updateTamaUI();
+                };
+            }
+        }
         return;
     }
 
-    // Смена спрайтов в зависимости от состояния
+    // ЕСЛИ ПИТОМЕЦ ЖИВ (Смена текстур)
+    let currentImagePath = pet.happy;
+
     if (tamaStats.satiety < 35) {
-        sprite.innerText = pet.hungry;
-        statusText.innerText = `Я голоден! Покорми меня!`;
+        currentImagePath = pet.hungry;
+        statusText.innerText = `Я голоден! Покорми меня! 🍎`;
     } else if (tamaStats.energy < 35) {
-        sprite.innerText = pet.tired;
-        statusText.innerText = `Я устал, хочу спать...`;
+        currentImagePath = pet.tired;
+        statusText.innerText = `Я устал, хочу спать... 💤`;
     } else {
-        sprite.innerText = pet.happy;
-        statusText.innerText = `${pet.name} чувствует себя отлично!`;
+        currentImagePath = pet.happy;
+        statusText.innerText = `${pet.name} чувствует себя отлично! 🥰`;
     }
+
+    sprite.innerHTML = `<img src="${currentImagePath}" alt="pet" class="tama-img">`;
 }
 
+// Обработка кликов по кнопкам
 function interactTama(type) {
+    loadOrCreateTama();
     if (tamaStats.isDead) return;
 
     const sprite = document.getElementById('monster-sprite');
     
     if (type === 'feed') {
         tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
-        sprite.innerText = "😋"; // Временная эмоция радости от еды
+        tamaStats.energy = Math.min(100, tamaStats.energy + 5); 
     } else if (type === 'play') {
-        tamaStats.energy = Math.max(20, tamaStats.energy - 15);
-        tamaStats.satiety = Math.max(10, tamaStats.satiety - 10);
-        sprite.innerText = "🕺"; // Временная эмоция танца
+        tamaStats.energy = Math.max(10, tamaStats.energy - 15);
+        tamaStats.satiety = Math.max(10, tamaStats.satiety - 12);
+    } else if (type === 'pet') {
+        tamaStats.energy = Math.min(100, tamaStats.energy + 10);
+    } else if (type === 'sleep') {
+        tamaStats.energy = Math.min(100, tamaStats.energy + 40);
+        tamaStats.satiety = Math.max(10, tamaStats.satiety - 15);
     }
 
-    // Анимация прыжка при клике
-    sprite.style.transform = "scale(1.3) translateY(-20px)";
+    saveTama();
+
+    // Визуальный отклик (эффект прыжка/покачивания при нажатии)
+    sprite.style.transform = "scale(1.15) translateY(-15px)";
     setTimeout(() => {
         sprite.style.transform = "none";
         updateTamaUI();
-    }, 300);
+    }, 250);
 }
 
-// Запускаем таймер жизни раз в 7 секунд
-setInterval(loopTamaLogic, 7000);
-
+// Запускаем игровой таймер жизнедеятельности раз в 20 секунд
+setInterval(loopTamaLogic, 20000);
