@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Подбор Администратора</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Telegram WebApp API -->
+    <script src="https://telegram.org"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- СТАРТОВЫЙ ЭКРАН -->
+        <div id="welcome-screen" class="screen active">
+            <div class="card header-card">
+                <div class="emoji-hero">💌</div>
+                <h1>Хочешь найти своего админа?</h1>
+                <p>Ответь на несколько вопросов — и мы подберём человека, с которым тебе будет комфортнее всего общаться.</p>
+                <button id="start-btn" class="main-button">Подобрать админа</button>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ОПРОСА -->
+        <div id="quiz-screen" class="screen">
+            <div class="progress-container">
+                <div class="progress-dots" id="dots-container"></div>
+            </div>
+            <div class="card quiz-card">
+                <h2 id="question-title">Загрузка вопроса...</h2>
+                <div id="options-container" class="options-grid"></div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН РЕЗУЛЬТАТА -->
+        <div id="result-screen" class="screen">
+            <div class="card result-card">
+                <div class="emoji-hero" id="result-emoji">🫂</div>
+                <h1 id="result-title">Кажется, мы нашли твоего человека</h1>
+                
+                <div class="match-profile">
+                    <div class="match-avatar" id="match-avatar">✨</div>
+                    <h2 id="match-name">Катя</h2>
+                    <div class="match-badge">Совместимость: <span id="match-percent">94%</span></div>
+                    <p id="match-desc"></p>
+                </div>
+
+                <button id="action-btn" class="main-button">Написать</button>
+                <button id="close-btn" class="secondary-button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
