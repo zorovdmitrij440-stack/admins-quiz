@@ -3,49 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Подбор Администратора</title>
+    <title>Храни моё сердце</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Подключаем Telegram WebApp API -->
     <script src="https://telegram.org"></script>
 </head>
 <body>
+    <!-- НАВИГАЦИЯ МЕЖДУ РЕЖИМАМИ -->
+    <div class="tab-bar">
+        <button id="tab-quiz" class="tab-btn active">🎯 Подбор</button>
+        <button id="tab-tama" class="tab-btn">👾 Тамагочи</button>
+    </div>
+
     <div id="app">
-        <!-- СТАРТОВЫЙ ЭКРАН -->
-        <div id="welcome-screen" class="screen active">
-            <div class="card header-card">
-                <div class="emoji-hero">💌</div>
-                <h1>Хочешь найти своего админа?</h1>
-                <p>Ответь на несколько вопросов — и мы подберём человека, с которым тебе будет комфортнее всего общаться.</p>
-                <button id="start-btn" class="main-button">Подобрать админа</button>
+        <!-- ВКЛАДКА 1: ТЕСТ И ПОДБОР -->
+        <div id="quiz-tab-content" class="tab-content active">
+            <!-- СТАРТОВЫЙ ЭКРАН -->
+            <div id="welcome-screen" class="screen active">
+                <div class="card">
+                    <div class="emoji-hero">💌</div>
+                    <h1>Хочешь найти своего админа?</h1>
+                    <p>Ответь на несколько вопросов — и мы подберём человека, с которым тебе будет комфортнее всего общаться.</p>
+                    <button id="start-btn" class="main-button">Подобрать админа</button>
+                </div>
+            </div>
+
+            <!-- ЭКРАН ОПРОСА -->
+            <div id="quiz-screen" class="screen">
+                <div class="progress-container">
+                    <div class="progress-dots" id="dots-container"></div>
+                </div>
+                <div class="card">
+                    <h2 id="question-title">Загрузка...</h2>
+                    <div id="options-container" class="options-grid"></div>
+                </div>
+            </div>
+
+            <!-- ЭКРАН РЕЗУЛЬТАТА -->
+            <div id="result-screen" class="screen">
+                <div class="card">
+                    <div class="emoji-hero">🫂</div>
+                    <h1>Нашёлся твой человек!</h1>
+                    <div class="match-profile">
+                        <div class="match-avatar" id="match-avatar">✨</div>
+                        <h2 id="match-name">-</h2>
+                        <div class="match-badge"><span id="match-percent">0%</span> совместимости</div>
+                        <p id="match-desc"></p>
+                    </div>
+                    <button id="action-btn" class="main-button">Написать</button>
+                </div>
             </div>
         </div>
 
-        <!-- ЭКРАН ОПРОСА -->
-        <div id="quiz-screen" class="screen">
-            <div class="progress-container">
-                <div class="progress-dots" id="dots-container"></div>
-            </div>
-            <div class="card quiz-card">
-                <h2 id="question-title">Загрузка вопроса...</h2>
-                <div id="options-container" class="options-grid"></div>
-            </div>
-        </div>
-
-        <!-- ЭКРАН РЕЗУЛЬТАТА -->
-        <div id="result-screen" class="screen">
-            <div class="card result-card">
-                <div class="emoji-hero" id="result-emoji">🫂</div>
-                <h1 id="result-title">Кажется, мы нашли твоего человека</h1>
+        <!-- ВКЛАДКА 2: ГРАФИЧЕСКИЙ ТАМАГОЧИ -->
+        <div id="tama-tab-content" class="tab-content">
+            <div class="card tama-card">
+                <div class="monster-stage">
+                    <div id="monster-sprite" class="monster-bounce">🤖</div>
+                    <div id="monster-shadow"></div>
+                </div>
                 
-                <div class="match-profile">
-                    <div class="match-avatar" id="match-avatar">✨</div>
-                    <h2 id="match-name">Катя</h2>
-                    <div class="match-badge">Совместимость: <span id="match-percent">94%</span></div>
-                    <p id="match-desc"></p>
+                <h2 id="monster-status-text">Чувствует себя отлично!</h2>
+                
+                <div class="stats-holder">
+                    <div class="stat-line">
+                        <span>🍔 Сытость:</span>
+                        <div class="bar-bg"><div id="satiety-bar" class="bar-fill" style="width: 70%"></div></div>
+                    </div>
+                    <div class="stat-line">
+                        <span>❤️ Энергия:</span>
+                        <div class="bar-bg"><div id="energy-bar" class="bar-fill energy" style="width: 100%"></div></div>
+                    </div>
                 </div>
 
-                <button id="action-btn" class="main-button">Написать</button>
-                <button id="close-btn" class="secondary-button">Закрыть</button>
+                <div class="tama-actions">
+                    <button id="feed-btn" class="game-btn">🍎 Покормить</button>
+                    <button id="play-btn" class="game-btn">⚡ Развлечь</button>
+                </div>
             </div>
         </div>
     </div>
