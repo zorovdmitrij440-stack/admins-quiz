@@ -1,6 +1,6 @@
-// ==========================================
-// ЧАСТЬ 1: ИНИЦИАЛИЗАЦИЯ И ЛОГИКА ОПРОСА
-// ==========================================
+// ==========================================================================
+// ЧАСТЬ 1: ИНИЦИАЛИЗАЦИЯ, ВКЛАДКИ И ЛОГИКА ОПРОСА С ИИ-ПОДБОРОМ
+// ==========================================================================
 
 // Пассивное и безопасное объявление API Telegram
 let tg = null;
@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tabQuiz.classList.remove('active');
             tamaContent.classList.add('active');
             quizContent.classList.remove('active');
-            loadOrCreateTama(); // Загружаем или создаем питомца
-            updateTamaUI();
+            loadOrCreateTama(); // Загружаем или создаем питомца из сейва
+            updateTamaUI();     // Рисуем интерфейс игры
         };
     }
 
@@ -46,15 +46,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTamaActionButtons();
 });
 
-// Добавление кнопок действий в интерфейс
+// Добавление квадратных кнопок действий в интерфейс
 function setupTamaActionButtons() {
     const actionsContainer = document.querySelector('.tama-actions');
     if (!actionsContainer) return;
 
+    // Кнопки содержат и эмодзи, и текст для сетки 2х2
     actionsContainer.innerHTML = `
         <button id="feed-btn" class="game-btn">🍎 Покормить</button>
         <button id="play-btn" class="game-btn">🕺 Развлечь</button>
-        <button id="pet-btn" class="game-btn">❤️ Погладить</button>
+        <button id="pet-btn" class="game-btn">🥰 Погладить</button>
         <button id="sleep-btn" class="game-btn">😴 Спать</button>
     `;
 
@@ -170,28 +171,28 @@ function openLink(url) {
     if (tg) tg.openTelegramLink(url);
     else window.open(url, '_blank');
 }
-// ==========================================
-// ЧАСТЬ 2: ГРАФИЧЕСКИЙ ДВИЖОК ТАМАГОЧИ И ЛОКАЛЬНЫЕ СЕЙВЫ
-// ==========================================
+// ==========================================================================
+// ЧАСТЬ 2: ИГРОВОЙ ДВИЖОК ТАМАГОЧИ, НА ТЕКСТОВЫХ ЭМОДЗИ С ЛОКАЛЬНЫМ СЕЙВОМ
+// ==========================================================================
 
 const TAMA_TYPES = [
     {
         name: "Робо-Помощник",
-        happy: "images/robo_happy.png",
-        hungry: "images/robo_hungry.png",
-        tired: "images/robo_tired.png",
-        dead: "images/robo_dead.png"
+        happy: "🤖",
+        hungry: "🥺",
+        tired: "😴",
+        dead: "💀"
     },
     {
         name: "Космический Котик",
-        happy: "images/cat_happy.png",
-        hungry: "images/cat_hungry.png",
-        tired: "images/cat_tired.png",
-        dead: "images/cat_dead.png"
+        happy: "🐱",
+        hungry: "😾",
+        tired: "🙀",
+        dead: "☠️"
     }
 ];
 
-// Дефолтные настройки
+// Дефолтные настройки состояния
 let tamaStats = { 
     satiety: 80, 
     energy: 100, 
@@ -208,7 +209,7 @@ function loadOrCreateTama() {
         // Проверяем, не прошло ли уже время блокировки умершего питомца
         checkDeathTimeout();
     } else {
-        // Создаем нового случайного питомца раз и навсегда
+        // Создаем нового случайного питомца раз и навсегда для этого юзера
         tamaStats.typeIndex = Math.floor(Math.random() * TAMA_TYPES.length);
         tamaStats.satiety = 80;
         tamaStats.energy = 100;
@@ -241,12 +242,12 @@ function checkDeathTimeout() {
     }
 }
 
-// Жизненный цикл питомца (Снижено потребление: раз в 20 секунд)
+// Жизненный цикл питомца (Снижено потребление: параметры падают раз в 20 секунд)
 function loopTamaLogic() {
     loadOrCreateTama();
     if (tamaStats.isDead) return;
 
-    // Статистика падает намного медленнее
+    // Статистика падает плавно и медленно
     tamaStats.satiety = Math.max(0, tamaStats.satiety - 2);
     tamaStats.energy = Math.max(0, tamaStats.energy - 1);
 
@@ -260,7 +261,7 @@ function loopTamaLogic() {
     updateTamaUI();
 }
 
-// Обновление внешнего вида игры
+// Обновление внешнего вида игры (Возвращены эмодзи вместо картинок)
 function updateTamaUI() {
     loadOrCreateTama();
     const sprite = document.getElementById('monster-sprite');
@@ -274,9 +275,8 @@ function updateTamaUI() {
 
     // ЕСЛИ ПИТОМЕЦ УМЕР
     if (tamaStats.isDead) {
-        sprite.innerHTML = `<img src="${pet.dead}" alt="dead" class="tama-img">`;
+        sprite.innerHTML = `<div class="tama-emoji-sprite">${pet.dead}</div>`;
         
-        // Считаем сколько осталось до воскрешения
         const now = Date.now();
         const oneDayInMs = 24 * 60 * 60 * 1000;
         const timeLeft = oneDayInMs - (now - tamaStats.deathTime);
@@ -285,19 +285,19 @@ function updateTamaUI() {
             const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
             statusText.innerHTML = `Ваш питомец погиб.<br><span style="color:var(--hint-color); font-size:14px;">Получить нового вы сможете через ${hoursLeft} ч.</span>`;
             
-            // Заменяем кнопки действий на заглушку
+            // Заменяем сетку кнопок на одну большую заглушку блокировки во всю ширину
             if (actionsContainer) {
-                actionsContainer.innerHTML = `<button class="game-btn" style="background:#ffebee; color:#c62828; border:none; width:100%; cursor:not-allowed;" disabled>🔒 Доступ заблокирован</button>`;
+                actionsContainer.innerHTML = `<button class="game-btn" style="background:#ffebee; color:#c62828; border:none; width:100%; grid-column: span 2; cursor:not-allowed;" disabled>🔒 Доступ заблокирован</button>`;
             }
         } else {
-            // Если сутки прошли — выводим кнопку Воскресить
+            // Если сутки прошли — выводим кнопку Воскресить во всю ширину сетки (span 2)
             statusText.innerText = "Время прошло. Вы можете призвать нового питомца!";
             if (actionsContainer) {
-                actionsContainer.innerHTML = `<button id="revive-btn" class="main-button" style="width:100%;">✨ Воскресить питомца</button>`;
+                actionsContainer.innerHTML = `<button id="revive-btn" class="main-button" style="width:100%; grid-column: span 2;">✨ Воскресить питомца</button>`;
                 document.getElementById('revive-btn').onclick = () => {
-                    localStorage.removeItem('tg_tama_save'); // Удаляем старое сохранение
+                    localStorage.removeItem('tg_tama_save'); // Удаляем старый сейв
                     loadOrCreateTama(); // Пересоздаем
-                    setupTamaActionButtons(); // Возвращаем игровые кнопки
+                    setupTamaActionButtons(); // Возвращаем стандартную сетку 2х2
                     updateTamaUI();
                 };
             }
@@ -305,46 +305,55 @@ function updateTamaUI() {
         return;
     }
 
-    // ЕСЛИ ПИТОМЕЦ ЖИВ (Смена текстур)
-    let currentImagePath = pet.happy;
+    // ЕСЛИ ПИТОМЕЦ ЖИВ (Смена крупных текстовых эмодзи от состояния)
+    let currentEmoji = pet.happy;
 
     if (tamaStats.satiety < 35) {
-        currentImagePath = pet.hungry;
+        currentEmoji = pet.hungry;
         statusText.innerText = `Я голоден! Покорми меня! 🍎`;
     } else if (tamaStats.energy < 35) {
-        currentImagePath = pet.tired;
+        currentEmoji = pet.tired;
         statusText.innerText = `Я устал, хочу спать... 💤`;
     } else {
-        currentImagePath = pet.happy;
+        currentEmoji = pet.happy;
         statusText.innerText = `${pet.name} чувствует себя отлично! 🥰`;
     }
 
-    sprite.innerHTML = `<img src="${currentImagePath}" alt="pet" class="tama-img">`;
+    sprite.innerHTML = `<div class="tama-emoji-sprite">${currentEmoji}</div>`;
 }
 
-// Обработка кликов по кнопкам
+// Обработка кликов по кнопкам взаимодействий
 function interactTama(type) {
     loadOrCreateTama();
     if (tamaStats.isDead) return;
 
     const sprite = document.getElementById('monster-sprite');
     
+    let actionEmoji = TAMA_TYPES[tamaStats.typeIndex].happy;
+    
     if (type === 'feed') {
         tamaStats.satiety = Math.min(100, tamaStats.satiety + 20);
         tamaStats.energy = Math.min(100, tamaStats.energy + 5); 
+        actionEmoji = "😋";
     } else if (type === 'play') {
         tamaStats.energy = Math.max(10, tamaStats.energy - 15);
         tamaStats.satiety = Math.max(10, tamaStats.satiety - 12);
+        actionEmoji = "🕺";
     } else if (type === 'pet') {
         tamaStats.energy = Math.min(100, tamaStats.energy + 10);
+        actionEmoji = "🥰";
     } else if (type === 'sleep') {
         tamaStats.energy = Math.min(100, tamaStats.energy + 40);
         tamaStats.satiety = Math.max(10, tamaStats.satiety - 15);
+        actionEmoji = "😴";
     }
 
     saveTama();
 
-    // Визуальный отклик (эффект прыжка/покачивания при нажатии)
+    // Быстрая смена эмодзи на момент анимации взаимодействия
+    sprite.innerHTML = `<div class="tama-emoji-sprite">${actionEmoji}</div>`;
+
+    // Эффект подпрыгивания вверх при нажатии
     sprite.style.transform = "scale(1.15) translateY(-15px)";
     setTimeout(() => {
         sprite.style.transform = "none";
