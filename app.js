@@ -153,17 +153,23 @@ function calculateResult() {
     const actionBtn = document.getElementById('action-btn');
     
     if (maxMatches <= 0) {
+        // Блок, если совпадений нет вообще
         document.getElementById('match-avatar').innerText = "🚀";
         document.getElementById('match-name').innerText = "Стань им сам!";
         document.getElementById('match-percent').innerText = "0%";
         document.getElementById('match-desc').innerText = "Похоже, у нас нет подходящего администратора. Попробуй стать им!";
-        actionBtn.onclick = () => openLink("https://t.me");
+        actionBtn.onclick = () => openLink("https://t.me/formkeepmyheart_bot");
     } else {
+        // Блок успешного ИИ-подбора кандидата (Все скобки на месте)
+        const basePercent = 72 + Math.floor((maxMatches / QUESTIONS.length) * 20);
+        const randomBonus = Math.floor(Math.random() * 6); 
+        const finalPercent = Math.min(99, basePercent + randomBonus);
+
         document.getElementById('match-avatar').innerText = bestAdmin.avatar;
         document.getElementById('match-name').innerText = bestAdmin.name;
-        document.getElementById('match-percent').innerText = "94%";
+        document.getElementById('match-percent').innerText = finalPercent + "%";
         document.getElementById('match-desc').innerText = bestAdmin.desc;
-        actionBtn.onclick = () => openLink(`https://t.me{bestAdmin.username}`);
+        actionBtn.onclick = () => openLink(`https://t.me/keepmyheart_bot`);
     }
 }
 
